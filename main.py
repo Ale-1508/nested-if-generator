@@ -105,8 +105,8 @@ class HeaderContainer(ft.Container):
         "height": 36
     }
     def __init__(self):
-        targetCell = TextfieldSmall(hint_text="Cella", col="4", **self.textfieldStyle)
-        defautlValue = TextfieldSmall(hint_text="Valore di Default", col="8", **self.textfieldStyle)
+        targetCell = TextfieldSmall(hint_text="Cell", col="4", **self.textfieldStyle)
+        defautlValue = TextfieldSmall(hint_text="Default Value", col="8", **self.textfieldStyle)
         
         appState.add([
             ("targetCell", targetCell),
@@ -132,7 +132,7 @@ class MainContainer(ft.Container):
                 spacing=16,
                 controls=[
                     AddCondition(),
-                    Text("Lista Condizioni:", color="white", size=18),
+                    Text("Conditions List:", color="white", size=18),
                     ConditionsList(),
                 ],
             ),
@@ -144,8 +144,8 @@ class AddCondition(ft.Container):
         "height": 36
     }
     def __init__(self):
-        self.condition = TextfieldSmall(hint_text="Condizione", col="6", **self.textfieldStyle)
-        self.ifTrue = TextfieldSmall(hint_text="Se Vero", col="6", **self.textfieldStyle)
+        self.condition = TextfieldSmall(hint_text="Condition", col="6", **self.textfieldStyle)
+        self.ifTrue = TextfieldSmall(hint_text="If True", col="6", **self.textfieldStyle)
 
         super().__init__(
             padding=16,
@@ -170,7 +170,7 @@ class AddCondition(ft.Container):
                             self.ifTrue,
                         ],
                     ),
-                    Button("Aggiungi Condizione", on_click=self.add),
+                    Button("Add Condition", on_click=self.add),
                 ]
             )
         )
@@ -210,7 +210,7 @@ class Condition(ft.Container):
             content=ft.Row(
                 alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 controls=[
-                    ft.Text(f"""SE( {appState.targetCell.value.upper()} = "{condition}"; "{ifTrue}"; ... )""", color="#F5F5F5"),
+                    ft.Text(f"""IF( {appState.targetCell.value.upper()} = "{condition}"; "{ifTrue}"; ... )""", color="#F5F5F5"),
                     ft.IconButton(
                         icon=ft.icons.REMOVE_ROUNDED, 
                         icon_color="#F5F5F5", 
@@ -243,48 +243,48 @@ class ConditionsList(ft.Container):
         )
 
     def addCondition(self, condition:dict):
-        if checkTextfieldNullOrEmpty(appState.targetCell.value, self.page, "Inserire una Cella"): return
+        if checkTextfieldNullOrEmpty(appState.targetCell.value, self.page, "Insert a Cell"): return
         try: int(appState.targetCell.value[-1])
-        except ValueError: raiseError(self.page, "Formato cella non valido")
+        except ValueError: raiseError(self.page, "Invalid cell format")
         else:
             conditionContainer = Condition(**condition)
             conditionContainer.data = self.conditionID
             self.conditionID += 1
             self.content.controls[0].controls.append(conditionContainer)
+            appState.conditions.append(conditionContainer)
             self.update()
 
     def deleteCondition(self, conditionID:dict):
         for index, condition in enumerate(appState.conditions):
             if not conditionID == condition.data: continue
             self.content.controls[0].controls.pop(index)
+            appState.conditions.pop(index)
             self.update()
             return
 
 def raiseError(page:ft.Page, message:str): openDialog(page, ft.AlertDialog(title=ft.Text(message, text_align=ft.TextAlign.CENTER)))
 
-def checkTextfieldNullOrEmpty(value:str, page:ft.Page, error:str="Campo Vuoto")->bool:
+def checkTextfieldNullOrEmpty(value:str, page:ft.Page, error:str="Empty Field")->bool:
     if not value == "" or value: return False
     raiseError(page, error)
     return True
 
 def copyToClipboard(text): subprocess.run("clip", text=True, input=text)
 
-# apri message box
 def openDialog(page: ft.Page, dialog:ft.AlertDialog):
     page.overlay.append(dialog)
     dialog.open = True
     page.update()
 
-# genera formula excel a partire da dati inseriti
 def generateFormula(page: ft.Page):
     formula = f'"{appState.defautlValue.value}"'
     for condition in appState.conditions:
-        formula = f"""SE({appState.targetCell.value}="{condition.condition}";"{condition.ifTrue}";{formula})"""
+        formula = f"""IF({appState.targetCell.value.upper()}="{condition.condition}";"{condition.ifTrue}";{formula})"""
     copyToClipboard("=" + formula)
-    openDialog(page, ft.AlertDialog(title=ft.Text("Formula Generata e Copiata!", text_align=ft.TextAlign.CENTER)))
+    openDialog(page, ft.AlertDialog(title=ft.Text("Generated and Copied Formula!", text_align=ft.TextAlign.CENTER)))
 
 def main(page: ft.Page):
-    page.title = 'Generatore di Nested IF'
+    page.title = 'Nested IF Generator'
     page.window.width = 480
     page.window.height = 560
     page.window.center()
@@ -305,7 +305,7 @@ def main(page: ft.Page):
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
                     MainContainer(),
-                    Button("Genera Formula", on_click=lambda e: generateFormula(page))]
+                    Button("Generate Formula", on_click=lambda e: generateFormula(page))]
             )
         )    
     )
